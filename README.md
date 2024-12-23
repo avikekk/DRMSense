@@ -11,14 +11,6 @@ A web application that detects and displays your browser's Digital Rights Manage
 - 🎬 Video Codec Support (H.264, HEVC, VP9, AV1)
 - 💾 Export Results as JSON
 
-## Tech Stack
-
-- React
-- TypeScript
-- Tailwind CSS
-- Vite
-- Lucide Icons
-
 ## Live Demo
 
 Visit [DRM Capability Checker](https://drmsense.netlify.app) to try it out.

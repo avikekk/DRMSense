@@ -13,7 +13,7 @@ A web application that detects and displays your browser's Digital Rights Manage
 
 ## Live Demo
 
-Visit [DRM Capability Checker](https://drmsense.netlify.app) to try it out.
+Visit [DRM-Shecker](https://drmsense.netlify.app) to try it out.
 
 ## Development
 

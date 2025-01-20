@@ -1,4 +1,4 @@
-# DRM Capability Checker
+# DRMSense
 
 A web application that detects and displays your browser's Digital Rights Management (DRM) capabilities, including Widevine, PlayReady, and FairPlay support.
 

@@ -19,11 +19,17 @@ const TEST_CODECS: Codec[] = [
   { name: 'AV1', mimeType: 'video/mp4;codecs="av01.0.01M.08"', supported: false },
 ];
 
+// Extended MediaKeySystemMediaCapability interface to include resolution properties
+interface ExtendedMediaCapability extends MediaKeySystemMediaCapability {
+  width?: number;
+  height?: number;
+}
+
 async function checkPersistentLicenseSupport(keySystem: string): Promise<boolean> {
   try {
-    const config = {
+    const config: MediaKeySystemConfiguration = {
       initDataTypes: ['cenc'],
-      persistentState: 'required',
+      persistentState: 'required' as MediaKeysRequirement,
       sessionTypes: ['persistent-license'],
       audioCapabilities: [{
         contentType: 'audio/mp4;codecs="mp4a.40.2"',
@@ -84,7 +90,7 @@ export async function detectDRMSupport(): Promise<DRMSystemInfo[]> {
     // Test each resolution
     for (const resolution of TEST_RESOLUTIONS) {
       try {
-        const config = {
+        const config: MediaKeySystemConfiguration = {
           initDataTypes: ['cenc'],
           audioCapabilities: [{
             contentType: 'audio/mp4;codecs="mp4a.40.2"',
@@ -93,9 +99,10 @@ export async function detectDRMSupport(): Promise<DRMSystemInfo[]> {
           videoCapabilities: [{
             contentType: 'video/mp4;codecs="avc1.42E01E"',
             robustness: '',
+            // Use type assertion to avoid TypeScript error
             width: resolution.width,
             height: resolution.height
-          }]
+          } as ExtendedMediaCapability]
         };
 
         await navigator.requestMediaKeySystemAccess(drm.keySystem, [config]);
@@ -117,7 +124,7 @@ export async function detectDRMSupport(): Promise<DRMSystemInfo[]> {
 
         // Try to determine security level
         try {
-          const config = {
+          const config: MediaKeySystemConfiguration = {
             initDataTypes: ['cenc'],
             videoCapabilities: [{
               contentType: 'video/mp4;codecs="avc1.42E01E"',

@@ -16,15 +16,15 @@ export function SystemInfoCard({ info }: SystemInfoCardProps) {
       
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <p className="text-gray-600 dark:text-gray-400 font-mono text-sm">Operating System</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Operating System</p>
           <p className="font-medium text-gray-900 dark:text-white">{info.os}</p>
         </div>
         <div>
-          <p className="text-gray-600 dark:text-gray-400 font-mono text-sm">Browser</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Browser</p>
           <p className="font-medium text-gray-900 dark:text-white">{info.browser}</p>
         </div>
         <div>
-          <p className="text-gray-600 dark:text-gray-400 font-mono text-sm">Version</p>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Version</p>
           <p className="font-medium text-gray-900 dark:text-white">{info.version}</p>
         </div>
       </div>

@@ -83,7 +83,7 @@ function App() {
           </>
         )}
 
-        <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
+        <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>Note: This tool uses the Encrypted Media Extensions (EME) API to detect DRM support.</p>
           <p>Results may vary depending on your browser and system configuration.</p>
         </div>

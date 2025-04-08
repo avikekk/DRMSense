@@ -33,12 +33,12 @@ export function DRMCard({ system }: DRMCardProps) {
         {system.supported && (
           <>
             <div>
-              <p className="text-gray-600 dark:text-gray-300 mb-2 font-mono text-sm">Supported Resolutions:</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-2 text-sm">Supported Resolutions:</p>
               <div className="flex flex-wrap gap-2">
                 {system.supportedResolutions.map((resolution) => (
                   <span
                     key={resolution.name}
-                    className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm font-mono"
+                    className="px-3 py-1 bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-full text-sm"
                   >
                     {resolution.name}
                   </span>
@@ -47,12 +47,12 @@ export function DRMCard({ system }: DRMCardProps) {
             </div>
 
             <div>
-              <p className="text-gray-600 dark:text-gray-300 mb-2 font-mono text-sm">Video Codec Support:</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-2 text-sm">Video Codec Support:</p>
               <div className="flex flex-wrap gap-2">
                 {system.supportedCodecs.map((codec) => (
                   <span
                     key={codec.name}
-                    className={`px-3 py-1 rounded-full text-sm font-mono ${
+                    className={`px-3 py-1 rounded-full text-sm ${
                       codec.supported 
                         ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                         : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300'
@@ -65,12 +65,12 @@ export function DRMCard({ system }: DRMCardProps) {
             </div>
 
             <div>
-              <p className="text-gray-600 dark:text-gray-300 mb-2 font-mono text-sm">Audio Codec Support:</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-2 text-sm">Audio Codec Support:</p>
               <div className="flex flex-wrap gap-2">
                 {system.supportedAudioCodecs.map((codec) => (
                   <span
                     key={codec.name}
-                    className={`px-3 py-1 rounded-full text-sm font-mono ${
+                    className={`px-3 py-1 rounded-full text-sm ${
                       codec.supported 
                         ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                         : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300'
@@ -83,12 +83,12 @@ export function DRMCard({ system }: DRMCardProps) {
             </div>
 
             <div>
-              <p className="text-gray-600 dark:text-gray-300 mb-2 font-mono text-sm">HDR Capabilities:</p>
+              <p className="text-gray-600 dark:text-gray-300 mb-2 text-sm">HDR Capabilities:</p>
               <div className="flex flex-wrap gap-2">
                 {system.hdrCapabilities.map((hdr) => (
                   <span
                     key={hdr.name}
-                    className={`px-3 py-1 rounded-full text-sm font-mono ${
+                    className={`px-3 py-1 rounded-full text-sm ${
                       hdr.supported 
                         ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
                         : 'bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-300'

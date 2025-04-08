@@ -47,21 +47,21 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors font-sans">
       <ThemeToggle />
       <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Shield className="w-10 h-10 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">DRMSense</h1>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">DRMSense</h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-4">
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-4 text-lg">
             Check your browser's Digital Rights Management (DRM) capabilities, including support for
             Widevine, PlayReady, FairPlay, and supported video resolutions.
           </p>
           <button
             onClick={handleExport}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 font-medium"
           >
             <Download className="w-4 h-4" />
             Export Results
@@ -83,7 +83,7 @@ function App() {
           </>
         )}
 
-        <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400 font-mono">
           <p>Note: This tool uses the Encrypted Media Extensions (EME) API to detect DRM support.</p>
           <p>Results may vary depending on your browser and system configuration.</p>
         </div>

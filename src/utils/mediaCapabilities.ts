@@ -1,4 +1,4 @@
-import { AudioCodec, HDRCapability } from '../types/drm';
+import { AudioCodec, HDRCapability, MediaCapabilitiesInfo } from '../types/drm';
 
 export const TEST_AUDIO_CODECS: AudioCodec[] = [
   { name: 'AAC', mimeType: 'audio/mp4;codecs="mp4a.40.2"', supported: false },
@@ -33,30 +33,43 @@ export async function checkAudioCodecSupport(codec: AudioCodec): Promise<boolean
 
 export async function detectHDRSupport(): Promise<HDRCapability[]> {
   const hdrCapabilities = [...HDR_CAPABILITIES];
-  
+
   if ('window' in globalThis && 'matchMedia' in window) {
     // Check HDR support using CSS media query
     const hdrSupport = window.matchMedia('(dynamic-range: high)').matches;
-    
+
     // If HDR is supported, we'll assume HDR10 support as it's the base HDR format
     if (hdrSupport) {
       const hdr10 = hdrCapabilities.find(cap => cap.name === 'HDR10');
       if (hdr10) hdr10.supported = true;
     }
 
-    // Check color-gamut support for Dolby Vision inference
-    const wideColorGamut = window.matchMedia('(color-gamut: p3)').matches;
-    if (wideColorGamut) {
-      const dolbyVision = hdrCapabilities.find(cap => cap.name === 'Dolby Vision');
-      if (dolbyVision) dolbyVision.supported = true;
-    }
+    // NOTE: Dolby Vision detection is unreliable via browser APIs.
+    // We're removing the false positive P3 color gamut check.
+    // True Dolby Vision support requires hardware and license verification
+    // which is not available through standard web APIs.
 
     // HLG support check
     try {
-      const mediaCapabilities = (navigator as any).mediaCapabilities;
-      if (mediaCapabilities) {
+      // Type guard for mediaCapabilities
+      interface MediaCapabilitiesExtended {
+        decodingInfo(config: {
+          type: string;
+          video: {
+            contentType: string;
+            width: number;
+            height: number;
+            framerate: number;
+            transferFunction: string;
+          };
+        }): Promise<MediaCapabilitiesInfo>;
+      }
+
+      const mediaCapabilities = navigator.mediaCapabilities as MediaCapabilitiesExtended | undefined;
+
+      if (mediaCapabilities && 'decodingInfo' in mediaCapabilities) {
         const hlgConfig = {
-          type: 'media-source',
+          type: 'media-source' as const,
           video: {
             contentType: 'video/mp4;codecs="avc1.42E01E"',
             width: 1920,
@@ -65,7 +78,7 @@ export async function detectHDRSupport(): Promise<HDRCapability[]> {
             transferFunction: 'hlg'
           }
         };
-        
+
         const hlgSupport = await mediaCapabilities.decodingInfo(hlgConfig);
         const hlg = hdrCapabilities.find(cap => cap.name === 'HLG');
         if (hlg) hlg.supported = hlgSupport.supported;

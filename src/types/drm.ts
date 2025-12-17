@@ -4,6 +4,14 @@ export interface Resolution {
   name: string;
 }
 
+export interface MediaCapabilitiesInfo {
+  supported: boolean;
+  smooth?: boolean;
+  powerEfficient?: boolean;
+}
+
+export type LucideIconName = 'Shield' | 'ShieldCheck' | 'ShieldAlert';
+
 export interface Codec {
   name: string;
   mimeType: string;
@@ -25,7 +33,7 @@ export interface HDRCapability {
 export interface DRMSystem {
   name: string;
   keySystem: string;
-  icon: string;
+  icon: LucideIconName;
 }
 
 export interface DRMSystemInfo extends DRMSystem {

@@ -1,8 +1,24 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "drmsense",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "A web application that detects and displays browser DRM capabilities including Widevine, PlayReady, and FairPlay support",
+  "keywords": [
+    "drm",
+    "widevine",
+    "playready",
+    "fairplay",
+    "eme",
+    "encrypted-media",
+    "browser-capabilities"
+  ],
+  "author": "Your Name",
+  "homepage": "https://drmsense.netlify.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/drmsense"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,12 +26,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@types/node": "^25.0.3",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

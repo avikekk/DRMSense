@@ -9,10 +9,7 @@ interface MediaCapabilitiesCardProps {
 export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardProps) {
     return (
         <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md p-6 border border-gray-100 dark:border-dark-700 col-span-full">
-            <div className="flex items-center gap-3 mb-6">
-                <Film className="w-8 h-8 text-purple-500 dark:text-purple-400" />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Media Capabilities</h2>
-            </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 

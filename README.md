@@ -1,36 +1,68 @@
 # DRMSense
 
-A web application that detects and displays your browser's Digital Rights Management (DRM) capabilities, including Widevine, PlayReady, and FairPlay support.
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![React](https://img.shields.io/badge/React-18-61DAFB.svg) ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg) ![Vite](https://img.shields.io/badge/Vite-5.0-646CFF.svg)
 
-## Features
+**DRMSense** is a modern, high-precision web utility designed to analyze and visualize your browser's Digital Rights Management (DRM) capabilities and media support. Built with a focus on aesthetics and performance, it provides developers and streaming enthusiasts with detailed insights into what their current environment can handle.
 
-- 🛡️ DRM System Detection (Widevine, PlayReady, FairPlay)
-- 🎥 Video Resolution Support (480p to 4K)
-- 🎨 HDR Capabilities (HDR10, Dolby Vision, HLG)
-- 🔊 Audio Codec Support (AAC, AC3, E-AC3, FLAC, Opus, Vorbis)
-- 🎬 Video Codec Support (H.264, HEVC, VP9, AV1)
-- 💾 Export Results as JSON
+## ✨ Features
 
-## Live Demo
+### 🛡️ DRM System Analysis
+Detects support and security levels for major DRM systems:
+- **Google Widevine** (L1/L3 detection)
+- **Microsoft PlayReady**
+- **Apple FairPlay**
+- **Persistent License** & **Session Support** checks
 
-Visit [DRMSense](https://drmsense.netlify.app) to try it out.
+### 🎥 Deep Media Inspection
+Goes beyond basic checks to verify specific codec and resolution support:
+- **Video Codecs**: AV1, HEVC (H.265), VP9, H.264
+- **Audio Codecs**: Dolby Digital (AC3), E-AC3, FLAC, Opus, AAC
+- **HDR Capabilities**: Dolby Vision, HDR10, HLG
+- **Display Info**: Color Gamut (P3, sRGB), Refresh Rate (when available)
 
-## Development
+### 🚀 Modern Experience
+- **Premium UI**: Clean, glassmorphic design with smooth micro-animations.
+- **Dark Mode**: Fully supported system-aware dark/light theming.
+- **Privacy Focused**: All checks are performed locally in your browser. No data is sent to external servers.
+- **Data Export**: One-click export of all technical data to JSON for debugging or sharing.
 
-```bash
-# Install dependencies
-npm install
+## 🛠️ Tech Stack
 
-# Start development server
-npm run dev
+- **Framework**: [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Fonts**: Google Sans Flex
 
-# Build for production
-npm run build
+## ⚡ Getting Started
 
-# Preview production build
-npm run preview
-```
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- npm or yarn
 
-## License
+### Installation
 
-MIT
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/avikekk/DRMSense.git
+   cd DRMSense
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for production**
+   ```bash
+   npm run build
+   ```
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

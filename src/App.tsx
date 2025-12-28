@@ -14,6 +14,8 @@ function App() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({ os: '', browser: '', version: '' });
   const [loading, setLoading] = useState(true);
 
+  const [activeTab, setActiveTab] = useState<'media' | 'drm'>('media');
+
   useEffect(() => {
     async function checkDRM() {
       try {
@@ -79,16 +81,42 @@ function App() {
           <>
             <SystemInfoCard info={systemInfo} />
 
-            {mediaCapabilities && (
-              <div className="mb-8">
-                <MediaCapabilitiesCard capabilities={mediaCapabilities} />
-              </div>
-            )}
+            {/* Tab Navigation */}
+            <div className="flex justify-center mb-8 border-b border-gray-200 dark:border-dark-700">
+              <button
+                onClick={() => setActiveTab('media')}
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'media'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+              >
+                Media Capabilities
+              </button>
+              <button
+                onClick={() => setActiveTab('drm')}
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'drm'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+              >
+                DRM Info
+              </button>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {drmSystems.map((system) => (
-                <DRMCard key={system.name} system={system} />
-              ))}
+            <div className="min-h-[400px]">
+              {activeTab === 'media' && mediaCapabilities && (
+                <div className="animate-fade-in">
+                  <MediaCapabilitiesCard capabilities={mediaCapabilities} />
+                </div>
+              )}
+
+              {activeTab === 'drm' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+                  {drmSystems.map((system) => (
+                    <DRMCard key={system.name} system={system} />
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}

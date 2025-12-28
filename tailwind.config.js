@@ -12,8 +12,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Satoshi', 'system-ui', 'sans-serif'],
-        mono: ['Satoshi', 'system-ui', 'sans-serif'],
+        sans: ['"Google Sans Flex"', 'system-ui', 'sans-serif'],
       },
     },
   },

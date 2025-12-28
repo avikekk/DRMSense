@@ -1,3 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Google Sans Flex', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+
+
+  .animate-hover {
+    @apply transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg;
+  }
+}

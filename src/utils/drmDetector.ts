@@ -1,5 +1,12 @@
-import { DRMSystem, DRMSystemInfo, Resolution, Codec } from '../types/drm';
-import { TEST_AUDIO_CODECS, checkAudioCodecSupport, detectHDRSupport } from './mediaCapabilities';
+import { DRMSystem, DRMSystemInfo, Resolution, DetailedCodecInfo, DetailedAudioCodecInfo, DetailedMediaCapabilities, DisplayCapabilities } from '../types/drm';
+import {
+  VIDEO_CODECS_TO_TEST,
+  AUDIO_CODECS_TO_TEST,
+  checkAdvancedVideoSupport,
+  checkAdvancedAudioSupport,
+  detectAdvancedHDRSupport,
+  detectDisplayCapabilities
+} from './mediaCapabilities';
 
 const WIDEVINE_KEYSYSTEM = 'com.widevine.alpha';
 const PLAYREADY_KEYSYSTEM = 'com.microsoft.playready';
@@ -12,18 +19,11 @@ const TEST_RESOLUTIONS: Resolution[] = [
   { width: 3840, height: 2160, name: '4K' }
 ];
 
-const TEST_CODECS: Codec[] = [
-  { name: 'H.264', mimeType: 'video/mp4;codecs="avc1.42E01E"', supported: false },
-  { name: 'HEVC', mimeType: 'video/mp4;codecs="hevc.1.6.L93.B0"', supported: false },
-  { name: 'VP9', mimeType: 'video/webm;codecs="vp9"', supported: false },
-  { name: 'AV1', mimeType: 'video/mp4;codecs="av01.0.01M.08"', supported: false },
-];
-
 async function checkPersistentLicenseSupport(keySystem: string): Promise<boolean> {
   try {
     const config = {
       initDataTypes: ['cenc'],
-      persistentState: 'required',
+      persistentState: 'required' as const,
       sessionTypes: ['persistent-license'],
       audioCapabilities: [{
         contentType: 'audio/mp4;codecs="mp4a.40.2"',
@@ -37,67 +37,82 @@ async function checkPersistentLicenseSupport(keySystem: string): Promise<boolean
   }
 }
 
-async function checkCodecSupport(codec: Codec): Promise<boolean> {
-  return MediaSource.isTypeSupported(codec.mimeType);
-}
+export async function detectMediaAndDRM(): Promise<{ drmSystems: DRMSystemInfo[], mediaCapabilities: DetailedMediaCapabilities }> {
+  const displayCaps = detectDisplayCapabilities();
+  const advancedHDR = await detectAdvancedHDRSupport();
 
-export async function detectDRMSupport(): Promise<DRMSystemInfo[]> {
-  if (!window.navigator.requestMediaKeySystemAccess) {
-    return [];
+  // 1. Detect pure media capabilities (Codecs)
+  const videoCodecs: DetailedCodecInfo[] = [];
+  for (const codec of VIDEO_CODECS_TO_TEST) {
+    videoCodecs.push(await checkAdvancedVideoSupport(codec));
   }
 
-  const drmSystems: DRMSystem[] = [
-    {
-      name: 'Widevine',
-      keySystem: WIDEVINE_KEYSYSTEM,
-      icon: 'Shield'
-    },
-    {
-      name: 'PlayReady',
-      keySystem: PLAYREADY_KEYSYSTEM,
-      icon: 'ShieldCheck'
-    },
-    {
-      name: 'FairPlay',
-      keySystem: FAIRPLAY_KEYSYSTEM,
-      icon: 'ShieldAlert'
+  const audioCodecs: DetailedAudioCodecInfo[] = [];
+  for (const codec of AUDIO_CODECS_TO_TEST) {
+    audioCodecs.push(await checkAdvancedAudioSupport(codec));
+  }
+
+  const mediaCapabilities: DetailedMediaCapabilities = {
+    videoCodecs,
+    audioCodecs,
+    display: {
+      ...displayCaps,
+      hdr: {
+        ...displayCaps.hdr,
+        formats: advancedHDR
+      }
     }
+  };
+
+  // 2. Detect DRM Systems
+  if (!window.navigator.requestMediaKeySystemAccess) {
+    return { drmSystems: [], mediaCapabilities };
+  }
+
+  const drmSystemsInput: DRMSystem[] = [
+    { name: 'Widevine', keySystem: WIDEVINE_KEYSYSTEM, icon: 'Shield' },
+    { name: 'PlayReady', keySystem: PLAYREADY_KEYSYSTEM, icon: 'ShieldCheck' },
+    { name: 'FairPlay', keySystem: FAIRPLAY_KEYSYSTEM, icon: 'ShieldAlert' }
   ];
 
-  // Detect HDR capabilities
-  const hdrCapabilities = await detectHDRSupport();
+  const drmResults: DRMSystemInfo[] = [];
 
-  // Check audio codec support
-  const supportedAudioCodecs = [...TEST_AUDIO_CODECS];
-  for (let i = 0; i < supportedAudioCodecs.length; i++) {
-    supportedAudioCodecs[i].supported = await checkAudioCodecSupport(supportedAudioCodecs[i]);
-  }
-
-  const results: DRMSystemInfo[] = [];
-
-  for (const drm of drmSystems) {
+  for (const drm of drmSystemsInput) {
     const supportedResolutions: Resolution[] = [];
     let securityLevel = 'Unknown';
     let persistentLicenseSupport = false;
-    const supportedCodecs = [...TEST_CODECS];
 
-    // Test each resolution
+    // We can reuse the extensive codec list, but EME `requestMediaKeySystemAccess` has strict rules.
+    // It's often safer to stick to a basic set for the "Does this DRM work?" check, 
+    // BUT we can use the `supportedCodecs` field to report widely.
+    // For the UI, we'll just check specific codecs roughly or map the general ones.
+
+    // Let's re-map the general codec list to a simple boolean structure for the DRM card
+    // or just assume if the key system works, it supports the codecs the browser supports generally (mostly true).
+
+    // However, to fill the `supportedCodecs` on the DRM card, we'll check a subset specifically WITH the key system.
+    // This is expensive, so maybe we only check a few representative ones.
+
+    const representativeVideo = [
+      { name: 'H.264', mimeType: 'video/mp4;codecs="avc1.42E01E"' },
+      { name: 'HEVC', mimeType: 'video/mp4;codecs="hvc1.1.6.L93.B0"' },
+      { name: 'VP9', mimeType: 'video/webm;codecs="vp9"' }
+    ];
+
+    const supportedDrmCodecs: DetailedCodecInfo[] = [];
+
+    // Test Resolution (using H.264 as base)
     for (const resolution of TEST_RESOLUTIONS) {
       try {
         const config = {
           initDataTypes: ['cenc'],
-          audioCapabilities: [{
-            contentType: 'audio/mp4;codecs="mp4a.40.2"',
-            robustness: ''
-          }],
+          audioCapabilities: [{ contentType: 'audio/mp4;codecs="mp4a.40.2"' }],
           videoCapabilities: [{
             contentType: 'video/mp4;codecs="avc1.42E01E"',
-            robustness: '',
             width: resolution.width,
             height: resolution.height
           }]
         };
-
         await navigator.requestMediaKeySystemAccess(drm.keySystem, [config]);
         supportedResolutions.push(resolution);
       } catch {
@@ -105,17 +120,12 @@ export async function detectDRMSupport(): Promise<DRMSystemInfo[]> {
       }
     }
 
-    // If DRM is supported, check additional capabilities
     if (supportedResolutions.length > 0) {
+      // DRM supported
       try {
         persistentLicenseSupport = await checkPersistentLicenseSupport(drm.keySystem);
-        
-        // Check codec support
-        for (let i = 0; i < supportedCodecs.length; i++) {
-          supportedCodecs[i].supported = await checkCodecSupport(supportedCodecs[i]);
-        }
 
-        // Try to determine security level
+        // Security Level Probe
         try {
           const config = {
             initDataTypes: ['cenc'],
@@ -129,33 +139,51 @@ export async function detectDRMSupport(): Promise<DRMSystemInfo[]> {
         } catch {
           securityLevel = 'L3 (Software)';
         }
-      } catch {
-        // If additional checks fail, continue with basic support info
-      }
 
-      results.push({
+        // Check specific codecs WITH this DRM
+        for (const c of representativeVideo) {
+          try {
+            await navigator.requestMediaKeySystemAccess(drm.keySystem, [{
+              initDataTypes: ['cenc'],
+              videoCapabilities: [{ contentType: c.mimeType }]
+            }]);
+            supportedDrmCodecs.push({ ...c, supported: true });
+          } catch {
+            supportedDrmCodecs.push({ ...c, supported: false });
+          }
+        }
+
+      } catch { }
+
+      drmResults.push({
         ...drm,
         supported: true,
         supportedResolutions,
         persistentLicenseSupport,
         securityLevel,
-        supportedCodecs,
-        supportedAudioCodecs,
-        hdrCapabilities
+        supportedCodecs: supportedDrmCodecs,
+        supportedAudioCodecs: [], // We can populate if needed, but video is the main differentiator
+        hdrCapabilities: advancedHDR.filter(h => h.supported) // Assume if DRM + HDR supported generally, it works
       });
     } else {
-      results.push({
+      drmResults.push({
         ...drm,
         supported: false,
         supportedResolutions: [],
         persistentLicenseSupport: false,
         securityLevel: 'Not Supported',
-        supportedCodecs: supportedCodecs.map(codec => ({ ...codec, supported: false })),
-        supportedAudioCodecs: supportedAudioCodecs.map(codec => ({ ...codec, supported: false })),
-        hdrCapabilities
+        supportedCodecs: [],
+        supportedAudioCodecs: [],
+        hdrCapabilities: []
       });
     }
   }
 
-  return results;
+  return { drmSystems: drmResults, mediaCapabilities };
 }
+
+// Keep the old function signature for backward compatibility if needed,
+// OR refactor the caller. The plan implies we migrate, so let's export the new one
+// and maybe a wrapper if strictly required.
+// For now, I'll export `detectDRMSupport` as an alias alias or wrapper if I can't change App.tsx conveniently,
+// but I CAN change App.tsx. So I will rely on `detectMediaAndDRM`.

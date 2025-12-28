@@ -12,7 +12,7 @@ export function DRMCard({ system }: DRMCardProps) {
   return (
     <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md p-6 transition-all hover:shadow-lg border border-gray-100 dark:border-dark-700">
       <div className="flex items-center gap-3 mb-4">
-        <Icon className={`w-8 h-8 ${system.supported ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`} />
+        <Icon className={`w-8 h-8 glow-icon ${system.supported ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`} />
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{system.name}</h2>
       </div>
 

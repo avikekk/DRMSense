@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Download } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { detectMediaAndDRM } from './utils/drmDetector';
 import { getSystemInfo } from './utils/systemInfo';
 import { DRMCard } from './components/DRMCard';
@@ -33,46 +33,20 @@ function App() {
     checkDRM();
   }, []);
 
-  const handleExport = () => {
-    const data = {
-      systemInfo,
-      drmSystems,
-      mediaCapabilities,
-      timestamp: new Date().toISOString()
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'drm-media-capabilities.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const supportedDrmSystems = drmSystems.filter(system => system.supported);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors font-sans">
       <ThemeToggle />
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="text-center mb-8">
+        <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Shield className="w-10 h-10 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight">DRMSense</h1>
+            <Shield className="w-12 h-12 text-blue-600 dark:text-blue-400 glow-icon" />
+            <h1 className="text-5xl font-bold text-gray-900 dark:text-white tracking-tight">DRMSense</h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-4 text-lg">
+          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-xl">
             Check your browser's Digital Rights Management (DRM) capabilities and extensive media codec support.
           </p>
-          <button
-            onClick={handleExport}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors dark:bg-blue-500 dark:hover:bg-blue-600 font-medium"
-          >
-            <Download className="w-4 h-4" />
-            Export Results
-          </button>
         </div>
 
         {loading ? (
@@ -88,8 +62,8 @@ function App() {
               <button
                 onClick={() => setActiveTab('drm')}
                 className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'drm'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
               >
                 DRM Info
@@ -97,8 +71,8 @@ function App() {
               <button
                 onClick={() => setActiveTab('media')}
                 className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'media'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
                   }`}
               >
                 Media Info

@@ -16,12 +16,12 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                 {/* Video Codecs Section */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-dark-700">
-                        <Film className="w-5 h-5 text-gray-500" />
+                        <Film className="w-5 h-5 text-cyan-500 glow-icon" />
                         <h3 className="font-medium text-gray-900 dark:text-white">Video Codecs</h3>
                     </div>
                     <div className="space-y-3">
                         {capabilities.videoCodecs.map((codec) => (
-                            <div key={codec.name} className="flex flex-col text-sm">
+                            <div key={codec.name} className="flex flex-col text-sm animate-hover p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700/50">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-gray-700 dark:text-gray-300 font-medium">{codec.name}</span>
                                     {codec.supported ? (
@@ -56,12 +56,12 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                 {/* Audio Codecs Section */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-dark-700">
-                        <Music className="w-5 h-5 text-gray-500" />
+                        <Music className="w-5 h-5 text-pink-500 glow-icon" />
                         <h3 className="font-medium text-gray-900 dark:text-white">Audio Codecs</h3>
                     </div>
                     <div className="space-y-2">
                         {capabilities.audioCodecs.map((codec) => (
-                            <div key={codec.name} className="flex justify-between items-center text-sm">
+                            <div key={codec.name} className="flex justify-between items-center text-sm animate-hover p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700/50">
                                 <span className="text-gray-700 dark:text-gray-300">{codec.name}</span>
                                 {codec.supported ? (
                                     <Check className="w-4 h-4 text-green-500" />
@@ -79,15 +79,15 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                     {/* Display Info */}
                     <div>
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-dark-700">
-                            <Monitor className="w-5 h-5 text-gray-500" />
+                            <Monitor className="w-5 h-5 text-amber-500 glow-icon" />
                             <h3 className="font-medium text-gray-900 dark:text-white">Display</h3>
                         </div>
                         <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
+                            <div className="flex justify-between animate-hover p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700/50">
                                 <span className="text-gray-600 dark:text-gray-400">Resolution</span>
                                 <span className="text-gray-900 dark:text-white font-medium">{capabilities.display.screen.width} x {capabilities.display.screen.height}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between animate-hover p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700/50">
                                 <span className="text-gray-600 dark:text-gray-400">Color Depth</span>
                                 <span className="text-gray-900 dark:text-white font-medium">
                                     {capabilities.display.screen.colorDepth}-bit
@@ -96,7 +96,7 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                                     </span>
                                 </span>
                             </div>
-                            <div className="mt-2 text-xs text-gray-500">
+                            <div className="mt-2 text-xs text-gray-500 animate-hover p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700/50">
                                 <p>Gamut Support:</p>
                                 <div className="flex gap-2 mt-1">
                                     <span className={capabilities.display.colorGamut.sRGB ? "text-green-600 dark:text-green-400" : "text-gray-400"}>sRGB</span>
@@ -116,7 +116,7 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                         </div>
                         <div className="space-y-2">
                             {capabilities.display.hdr.formats.map((hdr) => (
-                                <div key={hdr.name} className="flex justify-between items-center text-sm">
+                                <div key={hdr.name} className="flex justify-between items-center text-sm animate-hover p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700/50">
                                     <span className="text-gray-700 dark:text-gray-300" title={hdr.description}>{hdr.name}</span>
                                     {hdr.supported ? (
                                         <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs font-medium">

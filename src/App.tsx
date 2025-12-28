@@ -14,7 +14,7 @@ function App() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({ os: '', browser: '', version: '' });
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<'media' | 'drm'>('media');
+  const [activeTab, setActiveTab] = useState<'drm' | 'media'>('drm');
 
   useEffect(() => {
     async function checkDRM() {
@@ -52,6 +52,8 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const supportedDrmSystems = drmSystems.filter(system => system.supported);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors font-sans">
       <ThemeToggle />
@@ -84,15 +86,6 @@ function App() {
             {/* Tab Navigation */}
             <div className="flex justify-center mb-8 border-b border-gray-200 dark:border-dark-700">
               <button
-                onClick={() => setActiveTab('media')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'media'
-                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-              >
-                Media Capabilities
-              </button>
-              <button
                 onClick={() => setActiveTab('drm')}
                 className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'drm'
                     ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
@@ -100,6 +93,15 @@ function App() {
                   }`}
               >
                 DRM Info
+              </button>
+              <button
+                onClick={() => setActiveTab('media')}
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'media'
+                    ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+              >
+                Media Info
               </button>
             </div>
 
@@ -112,9 +114,19 @@ function App() {
 
               {activeTab === 'drm' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-                  {drmSystems.map((system) => (
-                    <DRMCard key={system.name} system={system} />
-                  ))}
+                  {supportedDrmSystems.length > 0 ? (
+                    supportedDrmSystems.map((system) => (
+                      <DRMCard key={system.name} system={system} />
+                    ))
+                  ) : (
+                    <div className="col-span-full text-center py-12 bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-100 dark:border-dark-700">
+                      <Shield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No active DRM systems detected</h3>
+                      <p className="text-gray-500 max-w-md mx-auto">
+                        Your browser doesn't appear to support the standard DRM systems (Widevine, PlayReady, FairPlay) checked by this tool.
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

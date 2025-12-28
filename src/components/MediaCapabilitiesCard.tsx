@@ -92,7 +92,12 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600 dark:text-gray-400">Color Depth</span>
-                                <span className="text-gray-900 dark:text-white font-medium">{capabilities.display.screen.colorDepth}-bit</span>
+                                <span className="text-gray-900 dark:text-white font-medium">
+                                    {capabilities.display.screen.colorDepth}-bit
+                                    <span className="text-gray-500 font-normal ml-1">
+                                        ({Math.round(capabilities.display.screen.colorDepth / 3)}-bit/channel)
+                                    </span>
+                                </span>
                             </div>
                             <div className="mt-2 text-xs text-gray-500">
                                 <p>Gamut Support:</p>

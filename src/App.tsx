@@ -41,7 +41,7 @@ function App() {
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Shield className="w-12 h-12 text-blue-600 dark:text-blue-400 glow-icon" />
+            <Shield className="w-12 h-12 text-blue-600 dark:text-blue-400" />
             <h1 className="text-5xl font-bold text-gray-900 dark:text-white tracking-tight">DRMSense</h1>
           </div>
           <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-xl">

@@ -16,7 +16,7 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                 {/* Video Codecs Section */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-dark-700">
-                        <Film className="w-5 h-5 text-cyan-500 glow-icon" />
+                        <Film className="w-5 h-5 text-cyan-500" />
                         <h3 className="font-medium text-gray-900 dark:text-white">Video Codecs</h3>
                     </div>
                     <div className="space-y-3">
@@ -56,7 +56,7 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                 {/* Audio Codecs Section */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-dark-700">
-                        <Music className="w-5 h-5 text-pink-500 glow-icon" />
+                        <Music className="w-5 h-5 text-pink-500" />
                         <h3 className="font-medium text-gray-900 dark:text-white">Audio Codecs</h3>
                     </div>
                     <div className="space-y-2">
@@ -79,7 +79,7 @@ export function MediaCapabilitiesCard({ capabilities }: MediaCapabilitiesCardPro
                     {/* Display Info */}
                     <div>
                         <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-100 dark:border-dark-700">
-                            <Monitor className="w-5 h-5 text-amber-500 glow-icon" />
+                            <Monitor className="w-5 h-5 text-amber-500" />
                             <h3 className="font-medium text-gray-900 dark:text-white">Display</h3>
                         </div>
                         <div className="space-y-2 text-sm">

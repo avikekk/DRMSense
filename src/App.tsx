@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, Download } from 'lucide-react';
 import { detectMediaAndDRM } from './utils/drmDetector';
 import { getSystemInfo } from './utils/systemInfo';
 import { DRMCard } from './components/DRMCard';
@@ -35,9 +35,37 @@ function App() {
 
   const supportedDrmSystems = drmSystems.filter(system => system.supported);
 
+  const handleExport = () => {
+    const data = {
+      systemInfo,
+      drmSystems,
+      mediaCapabilities,
+      exportedAt: new Date().toISOString(),
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `drm-sense-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors font-sans">
       <ThemeToggle />
+      <button
+        onClick={handleExport}
+        className="fixed top-4 right-16 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors z-50 text-gray-700 dark:text-gray-300"
+        aria-label="Export Data"
+        title="Export Data"
+      >
+        <Download className="w-5 h-5" />
+      </button>
+
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <div className="flex items-center justify-center gap-3 mb-4">

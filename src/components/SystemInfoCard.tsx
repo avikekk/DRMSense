@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor } from 'lucide-react';
+import { BsDisplay } from 'react-icons/bs';
 import type { SystemInfo } from '../types/drm';
 
 interface SystemInfoCardProps {
@@ -10,7 +10,7 @@ export function SystemInfoCard({ info }: SystemInfoCardProps) {
   return (
     <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md p-6 col-span-full mb-6 border border-gray-100 dark:border-dark-700">
       <div className="flex items-center gap-3 mb-4">
-        <Monitor className="w-8 h-8 text-blue-500 dark:text-blue-400" />
+        <BsDisplay className="w-8 h-8 text-blue-500 dark:text-blue-400" />
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">System Information</h2>
       </div>
       

@@ -1,5 +1,6 @@
 import React from 'react';
-import * as Icons from 'lucide-react';
+import { BsShield, BsShieldCheck, BsShieldExclamation } from 'react-icons/bs';
+import type { IconType } from 'react-icons';
 import { DRMSystemInfo } from '../types/drm';
 
 interface DRMCardProps {
@@ -7,7 +8,12 @@ interface DRMCardProps {
 }
 
 export function DRMCard({ system }: DRMCardProps) {
-  const Icon = Icons[system.icon as keyof typeof Icons];
+  const iconMap: Record<string, IconType> = {
+    Shield: BsShield,
+    ShieldCheck: BsShieldCheck,
+    ShieldAlert: BsShieldExclamation,
+  };
+  const Icon = iconMap[system.icon] ?? BsShield;
 
   return (
     <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md p-6 transition-all hover:shadow-lg border border-gray-100 dark:border-dark-700">

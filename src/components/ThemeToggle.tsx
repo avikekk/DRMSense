@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { BsSun, BsMoon } from 'react-icons/bs';
 import { useTheme } from '../hooks/useTheme';
 
 export function ThemeToggle() {
@@ -12,9 +12,9 @@ export function ThemeToggle() {
       aria-label="Toggle theme"
     >
       {isDark ? (
-        <Sun className="w-5 h-5 text-yellow-500" />
+        <BsSun className="w-5 h-5 text-yellow-500" />
       ) : (
-        <Moon className="w-5 h-5 text-blue-500" />
+        <BsMoon className="w-5 h-5 text-blue-500" />
       )}
     </button>
   );

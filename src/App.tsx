@@ -1,111 +1,48 @@
-import React, { useEffect, useState } from 'react';
-import { BsShield, BsDownload } from 'react-icons/bs';
-import { detectMediaAndDRM } from './utils/drmDetector';
-import { getSystemInfo } from './utils/systemInfo';
+import { useState } from 'react';
+import { useCapabilityDetection } from './hooks/useCapabilityDetection';
+import { buildExportPayload, downloadJson, exportFilename } from './utils/exportData';
 import { DRMCard } from './components/DRMCard';
-import { SystemInfoCard } from './components/SystemInfoCard';
+import { EmptyState } from './components/EmptyState';
+import { ExportButton } from './components/ExportButton';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import { MediaCapabilitiesCard } from './components/MediaCapabilitiesCard';
+import { PageHeader } from './components/PageHeader';
+import { SystemInfoCard } from './components/SystemInfoCard';
+import { TabBar, type Tab } from './components/TabBar';
 import { ThemeToggle } from './components/ThemeToggle';
-import type { DRMSystemInfo, SystemInfo, DetailedMediaCapabilities } from './types/drm';
+
+type TabId = 'drm' | 'media';
+
+const TABS: readonly Tab<TabId>[] = [
+  { id: 'drm', label: 'DRM Info' },
+  { id: 'media', label: 'Media Info' },
+];
 
 function App() {
-  const [drmSystems, setDrmSystems] = useState<DRMSystemInfo[]>([]);
-  const [mediaCapabilities, setMediaCapabilities] = useState<DetailedMediaCapabilities | null>(null);
-  const [systemInfo, setSystemInfo] = useState<SystemInfo>({ os: '', browser: '', version: '' });
-  const [loading, setLoading] = useState(true);
+  const { drmSystems, mediaCapabilities, systemInfo, loading } = useCapabilityDetection();
+  const [activeTab, setActiveTab] = useState<TabId>('drm');
 
-  const [activeTab, setActiveTab] = useState<'drm' | 'media'>('drm');
-
-  useEffect(() => {
-    async function checkDRM() {
-      try {
-        const { drmSystems, mediaCapabilities } = await detectMediaAndDRM();
-        setDrmSystems(drmSystems);
-        setMediaCapabilities(mediaCapabilities);
-        setSystemInfo(getSystemInfo());
-      } catch (error) {
-        console.error('Error detecting DRM support:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    checkDRM();
-  }, []);
-
-  const supportedDrmSystems = drmSystems.filter(system => system.supported);
+  const supportedDrmSystems = drmSystems.filter((system) => system.supported);
 
   const handleExport = () => {
-    const data = {
-      systemInfo,
-      drmSystems,
-      mediaCapabilities,
-      exportedAt: new Date().toISOString(),
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `drm-sense-data-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const payload = buildExportPayload(systemInfo, drmSystems, mediaCapabilities);
+    downloadJson(payload, exportFilename(payload.exportedAt));
   };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 transition-colors font-sans">
       <ThemeToggle />
-      <button
-        onClick={handleExport}
-        className="fixed top-4 right-16 p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors z-50 text-gray-700 dark:text-gray-300"
-        aria-label="Export Data"
-        title="Export Data"
-      >
-        <BsDownload className="w-5 h-5" />
-      </button>
+      <ExportButton onExport={handleExport} />
 
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <BsShield className="w-12 h-12 text-blue-600 dark:text-blue-400" />
-            <h1 className="text-5xl font-bold text-gray-900 dark:text-white tracking-tight">DRMSense</h1>
-          </div>
-          <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-xl">
-            Check your browser's Digital Rights Management (DRM) capabilities and extensive media codec support.
-          </p>
-        </div>
+        <PageHeader />
 
         {loading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400"></div>
-          </div>
+          <LoadingSpinner />
         ) : (
           <>
             <SystemInfoCard info={systemInfo} />
-
-            {/* Tab Navigation */}
-            <div className="flex justify-center mb-8 border-b border-gray-200 dark:border-dark-700">
-              <button
-                onClick={() => setActiveTab('drm')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'drm'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-              >
-                DRM Info
-              </button>
-              <button
-                onClick={() => setActiveTab('media')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${activeTab === 'media'
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
-              >
-                Codec Info
-              </button>
-            </div>
+            <TabBar tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
 
             <div className="min-h-[400px]">
               {activeTab === 'media' && mediaCapabilities && (
@@ -121,13 +58,7 @@ function App() {
                       <DRMCard key={system.name} system={system} />
                     ))
                   ) : (
-                    <div className="col-span-full text-center py-12 bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-100 dark:border-dark-700">
-                      <BsShield className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No active DRM systems detected</h3>
-                      <p className="text-gray-500 max-w-md mx-auto">
-                        Your browser doesn't appear to support the standard DRM systems (Widevine, PlayReady, FairPlay) checked by this tool.
-                      </p>
-                    </div>
+                    <EmptyState />
                   )}
                 </div>
               )}
@@ -136,8 +67,14 @@ function App() {
         )}
 
         <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>Note: This tool uses the Encrypted Media Extensions (EME) and Media Capabilities APIs.</p>
-          <p>Results may vary depending on your browser, operating system, and hardware configuration.</p>
+          <p>
+            Note: This tool uses the Encrypted Media Extensions (EME) and Media Capabilities
+            APIs.
+          </p>
+          <p>
+            Results may vary depending on your browser, operating system, and hardware
+            configuration.
+          </p>
         </div>
       </div>
     </div>

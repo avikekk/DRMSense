@@ -1,189 +1,314 @@
-import { DRMSystem, DRMSystemInfo, Resolution, DetailedCodecInfo, DetailedAudioCodecInfo, DetailedMediaCapabilities, DisplayCapabilities } from '../types/drm';
+import type {
+  DRMSystemInfo,
+  EncryptedCodecSupport,
+  HDRCapability,
+  KeySystemResult,
+} from '../types/drm';
 import {
-  VIDEO_CODECS_TO_TEST,
-  AUDIO_CODECS_TO_TEST,
-  checkAdvancedVideoSupport,
-  checkAdvancedAudioSupport,
-  detectAdvancedHDRSupport,
-  detectDisplayCapabilities
-} from './mediaCapabilities';
+  BASE_AUDIO_CAPABILITIES,
+  BASE_VIDEO_CAPABILITIES,
+  DRM_FAMILIES,
+  DRM_PROBE_CODECS,
+  ENCRYPTION_SCHEMES,
+  HDCP_VERSIONS,
+  FAIRPLAY_INIT_DATA_TYPE,
+  INIT_DATA_TYPES,
+  PLAYREADY_SECURITY_LEVELS,
+  WIDEVINE_SECURITY_LEVELS,
+  type DRMFamily,
+} from '../constants/drm';
+import { RESOLUTION_LADDER } from '../constants/codecs';
+import {
+  probeDecodingInfo,
+  probeHdcpVersions,
+  probeKeySystem,
+  requestKeySystemAccess,
+  type DecodingKeySystemConfiguration,
+  type KeySystemConfig,
+} from './probe';
 
-const WIDEVINE_KEYSYSTEM = 'com.widevine.alpha';
-const PLAYREADY_KEYSYSTEM = 'com.microsoft.playready';
-const FAIRPLAY_KEYSYSTEM = 'com.apple.fps';
-
-const TEST_RESOLUTIONS: Resolution[] = [
-  { width: 854, height: 480, name: '480p' },
-  { width: 1280, height: 720, name: '720p' },
-  { width: 1920, height: 1080, name: '1080p' },
-  { width: 3840, height: 2160, name: '4K' }
-];
-
-async function checkPersistentLicenseSupport(keySystem: string): Promise<boolean> {
-  try {
-    const config = {
-      initDataTypes: ['cenc'],
-      persistentState: 'required' as const,
-      sessionTypes: ['persistent-license'],
-      audioCapabilities: [{
-        contentType: 'audio/mp4;codecs="mp4a.40.2"',
-        robustness: ''
-      }]
-    };
-    await navigator.requestMediaKeySystemAccess(keySystem, [config]);
-    return true;
-  } catch {
-    return false;
-  }
+/** The permissive baseline config: matches if the CDM supports anything we offer. */
+function baseConfig(): KeySystemConfig {
+  return {
+    initDataTypes: INIT_DATA_TYPES,
+    videoCapabilities: [...BASE_VIDEO_CAPABILITIES],
+    audioCapabilities: [...BASE_AUDIO_CAPABILITIES],
+  };
 }
 
-export async function detectMediaAndDRM(): Promise<{ drmSystems: DRMSystemInfo[], mediaCapabilities: DetailedMediaCapabilities }> {
-  const displayCaps = detectDisplayCapabilities();
-  const advancedHDR = await detectAdvancedHDRSupport();
+/**
+ * Walk a family's key system strings strongest-first and return the first that
+ * the browser accepts, alongside the per-variant results for reporting.
+ *
+ * PlayReady is the reason this exists: `com.microsoft.playready` succeeds
+ * almost everywhere on Windows, but only the `.recommendation.3000` string
+ * tells you hardware DRM is actually available.
+ */
+async function resolveFamily(family: DRMFamily): Promise<{
+  keySystems: KeySystemResult[];
+  active: { keySystem: string; access: MediaKeySystemAccess } | null;
+}> {
+  const keySystems: KeySystemResult[] = [];
+  let active: { keySystem: string; access: MediaKeySystemAccess } | null = null;
 
-  // 1. Detect pure media capabilities (Codecs)
-  const videoCodecs: DetailedCodecInfo[] = [];
-  for (const codec of VIDEO_CODECS_TO_TEST) {
-    videoCodecs.push(await checkAdvancedVideoSupport(codec));
+  for (const variant of family.variants) {
+    const access = await requestKeySystemAccess(variant.keySystem, baseConfig());
+    keySystems.push({ ...variant, supported: access !== null });
+    if (access && !active) active = { keySystem: variant.keySystem, access };
   }
 
-  const audioCodecs: DetailedAudioCodecInfo[] = [];
-  for (const codec of AUDIO_CODECS_TO_TEST) {
-    audioCodecs.push(await checkAdvancedAudioSupport(codec));
+  return { keySystems, active };
+}
+
+/**
+ * Find every robustness string the CDM accepts. The list is ordered
+ * strongest-first, so the first hit determines the reported security level.
+ */
+async function probeRobustness(
+  keySystem: string,
+  levels: string[],
+  kind: 'video' | 'audio',
+): Promise<string[]> {
+  const accepted: string[] = [];
+
+  const contentType =
+    kind === 'video'
+      ? BASE_VIDEO_CAPABILITIES[0].contentType
+      : BASE_AUDIO_CAPABILITIES[0].contentType;
+
+  for (const robustness of levels) {
+    const capabilities = [{ contentType, robustness }];
+    const ok = await probeKeySystem(keySystem, {
+      initDataTypes: INIT_DATA_TYPES,
+      ...(kind === 'video'
+        ? { videoCapabilities: capabilities }
+        : { audioCapabilities: capabilities }),
+    });
+    if (ok) accepted.push(robustness);
   }
 
-  const mediaCapabilities: DetailedMediaCapabilities = {
-    videoCodecs,
-    audioCodecs,
-    display: {
-      ...displayCaps,
-      hdr: {
-        ...displayCaps.hdr,
-        formats: advancedHDR
-      }
-    }
+  return accepted;
+}
+
+/** EME v2 `encryptionScheme` negotiation — which schemes the CDM will decrypt. */
+async function probeEncryptionSchemes(keySystem: string): Promise<string[]> {
+  const accepted: string[] = [];
+
+  for (const encryptionScheme of ENCRYPTION_SCHEMES) {
+    const ok = await probeKeySystem(keySystem, {
+      initDataTypes: INIT_DATA_TYPES,
+      videoCapabilities: BASE_VIDEO_CAPABILITIES.map((c) => ({ ...c, encryptionScheme })),
+    });
+    if (ok) accepted.push(encryptionScheme);
+  }
+
+  return accepted;
+}
+
+/**
+ * Which codecs decode *under* this key system, and how far up the resolution
+ * ladder they get.
+ *
+ * `requestMediaKeySystemAccess` only answers "will the CDM accept this content
+ * type" — it ignores width/height entirely. `decodingInfo` with a
+ * `keySystemConfiguration` answers the question people actually have: whether
+ * 4K HEVC will play under this DRM, and whether it will play smoothly.
+ */
+async function probeEncryptedCodecs(
+  keySystem: string,
+  robustness: string | undefined,
+): Promise<EncryptedCodecSupport[]> {
+  // FairPlay rejects `cenc` here for the same reason it does in EME.
+  const initDataType = keySystem.startsWith('com.apple.fps')
+    ? FAIRPLAY_INIT_DATA_TYPE
+    : 'cenc';
+
+  const keySystemConfiguration: DecodingKeySystemConfiguration = {
+    keySystem,
+    initDataType,
+    ...(robustness ? { video: { robustness } } : {}),
   };
 
-  // 2. Detect DRM Systems
-  if (!window.navigator.requestMediaKeySystemAccess) {
-    return { drmSystems: [], mediaCapabilities };
-  }
+  const results: EncryptedCodecSupport[] = [];
 
-  const drmSystemsInput: DRMSystem[] = [
-    { name: 'Widevine', keySystem: WIDEVINE_KEYSYSTEM, icon: 'Shield' },
-    { name: 'PlayReady', keySystem: PLAYREADY_KEYSYSTEM, icon: 'ShieldCheck' },
-    { name: 'FairPlay', keySystem: FAIRPLAY_KEYSYSTEM, icon: 'ShieldAlert' }
-  ];
+  for (const codec of DRM_PROBE_CODECS) {
+    const base = await probeDecodingInfo(
+      {
+        type: 'media-source',
+        video: {
+          contentType: codec.mimeType,
+          width: 1920,
+          height: 1080,
+          bitrate: 6_000_000,
+          framerate: 30,
+        },
+        keySystemConfiguration,
+      },
+      null,
+      `${codec.name} under ${keySystem}`,
+    );
 
-  const drmResults: DRMSystemInfo[] = [];
-
-  for (const drm of drmSystemsInput) {
-    const supportedResolutions: Resolution[] = [];
-    let securityLevel = 'Unknown';
-    let persistentLicenseSupport = false;
-
-    // We can reuse the extensive codec list, but EME `requestMediaKeySystemAccess` has strict rules.
-    // It's often safer to stick to a basic set for the "Does this DRM work?" check, 
-    // BUT we can use the `supportedCodecs` field to report widely.
-    // For the UI, we'll just check specific codecs roughly or map the general ones.
-
-    // Let's re-map the general codec list to a simple boolean structure for the DRM card
-    // or just assume if the key system works, it supports the codecs the browser supports generally (mostly true).
-
-    // However, to fill the `supportedCodecs` on the DRM card, we'll check a subset specifically WITH the key system.
-    // This is expensive, so maybe we only check a few representative ones.
-
-    const representativeVideo = [
-      { name: 'H.264', mimeType: 'video/mp4;codecs="avc1.42E01E"' },
-      { name: 'HEVC', mimeType: 'video/mp4;codecs="hvc1.1.6.L93.B0"' },
-      { name: 'VP9', mimeType: 'video/webm;codecs="vp9"' }
-    ];
-
-    const supportedDrmCodecs: DetailedCodecInfo[] = [];
-
-    // Test Resolution (using H.264 as base)
-    for (const resolution of TEST_RESOLUTIONS) {
-      try {
-        const config = {
-          initDataTypes: ['cenc'],
-          audioCapabilities: [{ contentType: 'audio/mp4;codecs="mp4a.40.2"' }],
-          videoCapabilities: [{
-            contentType: 'video/mp4;codecs="avc1.42E01E"',
-            width: resolution.width,
-            height: resolution.height
-          }]
-        };
-        await navigator.requestMediaKeySystemAccess(drm.keySystem, [config]);
-        supportedResolutions.push(resolution);
-      } catch {
-        continue;
-      }
+    if (!base.supported) {
+      results.push({ ...codec, supported: false });
+      continue;
     }
 
-    if (supportedResolutions.length > 0) {
-      // DRM supported
-      try {
-        persistentLicenseSupport = await checkPersistentLicenseSupport(drm.keySystem);
-
-        // Security Level Probe
-        try {
-          const config = {
-            initDataTypes: ['cenc'],
-            videoCapabilities: [{
-              contentType: 'video/mp4;codecs="avc1.42E01E"',
-              robustness: 'HW_SECURE_ALL'
-            }]
-          };
-          await navigator.requestMediaKeySystemAccess(drm.keySystem, [config]);
-          securityLevel = 'L1 (Hardware)';
-        } catch {
-          securityLevel = 'L3 (Software)';
-        }
-
-        // Check specific codecs WITH this DRM
-        for (const c of representativeVideo) {
-          try {
-            await navigator.requestMediaKeySystemAccess(drm.keySystem, [{
-              initDataTypes: ['cenc'],
-              videoCapabilities: [{ contentType: c.mimeType }]
-            }]);
-            supportedDrmCodecs.push({ ...c, supported: true });
-          } catch {
-            supportedDrmCodecs.push({ ...c, supported: false });
-          }
-        }
-
-      } catch { }
-
-      drmResults.push({
-        ...drm,
-        supported: true,
-        supportedResolutions,
-        persistentLicenseSupport,
-        securityLevel,
-        supportedCodecs: supportedDrmCodecs,
-        supportedAudioCodecs: [], // We can populate if needed, but video is the main differentiator
-        hdrCapabilities: advancedHDR.filter(h => h.supported) // Assume if DRM + HDR supported generally, it works
-      });
-    } else {
-      drmResults.push({
-        ...drm,
-        supported: false,
-        supportedResolutions: [],
-        persistentLicenseSupport: false,
-        securityLevel: 'Not Supported',
-        supportedCodecs: [],
-        supportedAudioCodecs: [],
-        hdrCapabilities: []
-      });
+    // Only ladder codecs that already work — the rungs are the expensive part.
+    let maxResolution: string | undefined;
+    for (const rung of RESOLUTION_LADDER) {
+      const { supported } = await probeDecodingInfo(
+        {
+          type: 'media-source',
+          video: {
+            contentType: codec.mimeType,
+            width: rung.width,
+            height: rung.height,
+            bitrate: rung.bitrate,
+            framerate: 30,
+          },
+          keySystemConfiguration,
+        },
+        null,
+        `${codec.name} at ${rung.name} under ${keySystem}`,
+      );
+      if (supported) maxResolution = rung.name;
     }
+
+    results.push({
+      ...codec,
+      supported: true,
+      smooth: base.smooth,
+      powerEfficient: base.powerEfficient,
+      maxResolution,
+    });
   }
 
-  return { drmSystems: drmResults, mediaCapabilities };
+  return results;
 }
 
-// Keep the old function signature for backward compatibility if needed,
-// OR refactor the caller. The plan implies we migrate, so let's export the new one
-// and maybe a wrapper if strictly required.
-// For now, I'll export `detectDRMSupport` as an alias alias or wrapper if I can't change App.tsx conveniently,
-// but I CAN change App.tsx. So I will rely on `detectMediaAndDRM`.
+/**
+ * Ask for persistent-license and distinctive-identifier explicitly, then read
+ * back what the CDM negotiated. A CDM that does not support a `required`
+ * feature rejects the request outright.
+ */
+async function probeSessionFeatures(
+  keySystem: string,
+): Promise<{ persistentLicense: boolean; distinctiveIdentifier: boolean }> {
+  const persistentAccess = await requestKeySystemAccess(keySystem, {
+    initDataTypes: INIT_DATA_TYPES,
+    persistentState: 'required',
+    sessionTypes: ['persistent-license'],
+    videoCapabilities: [...BASE_VIDEO_CAPABILITIES],
+    audioCapabilities: [...BASE_AUDIO_CAPABILITIES],
+  });
+
+  const sessionTypes = persistentAccess?.getConfiguration().sessionTypes;
+
+  const distinctiveIdentifier = await probeKeySystem(keySystem, {
+    initDataTypes: INIT_DATA_TYPES,
+    distinctiveIdentifier: 'required',
+    videoCapabilities: [...BASE_VIDEO_CAPABILITIES],
+  });
+
+  return {
+    // Some CDMs grant access but silently drop the session type, so trust the
+    // negotiated configuration over the fact that the request resolved.
+    persistentLicense: sessionTypes ? sessionTypes.includes('persistent-license') : false,
+    distinctiveIdentifier,
+  };
+}
+
+function securityLevelFor(
+  family: DRMFamily,
+  keySystem: string,
+  videoRobustness: string[],
+): string {
+  if (family.name === 'Widevine') {
+    const best = videoRobustness[0];
+    return best ? (WIDEVINE_SECURITY_LEVELS[best] ?? best) : 'L3 (Software)';
+  }
+
+  if (family.name === 'PlayReady') {
+    // The key system string itself encodes hardware DRM when it ends in 3000.
+    if (keySystem.includes('3000')) return PLAYREADY_SECURITY_LEVELS['3000'];
+    if (keySystem.endsWith('.hardware')) return 'SL3000 (Hardware)';
+    const best = videoRobustness[0];
+    return best ? (PLAYREADY_SECURITY_LEVELS[best] ?? best) : 'SL2000 (Software)';
+  }
+
+  // FairPlay is hardware-backed by design and exposes no robustness strings.
+  if (family.name === 'FairPlay') return 'Hardware (Apple FairPlay)';
+  if (family.name === 'ClearKey') return 'None (test key system)';
+
+  return 'Not exposed';
+}
+
+function unsupportedFamily(family: DRMFamily, keySystems: KeySystemResult[]): DRMSystemInfo {
+  return {
+    name: family.name,
+    keySystem: family.variants[0].keySystem,
+    icon: family.icon,
+    supported: false,
+    keySystems,
+    securityLevel: 'Not Supported',
+    videoRobustness: [],
+    audioRobustness: [],
+    encryptionSchemes: [],
+    hdcpVersions: [],
+    persistentLicenseSupport: false,
+    distinctiveIdentifier: false,
+    supportedCodecs: [],
+    supportedAudioCodecs: [],
+    encryptedDecodingQueried: false,
+    hdrCapabilities: [],
+  };
+}
+
+/**
+ * Probes every known key system via EME.
+ *
+ * `hdrFormats` is passed in rather than detected here so this module stays
+ * independent of codec detection; a DRM system is reported as HDR-capable if
+ * the browser can decode that format at all.
+ */
+export async function detectDRMSystems(hdrFormats: HDRCapability[]): Promise<DRMSystemInfo[]> {
+  if (!navigator.requestMediaKeySystemAccess) return [];
+
+  const supportedHdr = hdrFormats.filter((h) => h.supported);
+  const results: DRMSystemInfo[] = [];
+
+  for (const family of DRM_FAMILIES) {
+    const { keySystems, active } = await resolveFamily(family);
+
+    if (!active) {
+      results.push(unsupportedFamily(family, keySystems));
+      continue;
+    }
+
+    const { keySystem, access } = active;
+    const videoRobustness = await probeRobustness(keySystem, family.robustness, 'video');
+    const audioRobustness = await probeRobustness(keySystem, family.robustness, 'audio');
+    const { persistentLicense, distinctiveIdentifier } = await probeSessionFeatures(keySystem);
+
+    results.push({
+      name: family.name,
+      keySystem,
+      icon: family.icon,
+      supported: true,
+      keySystems,
+      securityLevel: securityLevelFor(family, keySystem, videoRobustness),
+      videoRobustness,
+      audioRobustness,
+      encryptionSchemes: await probeEncryptionSchemes(keySystem),
+      hdcpVersions: await probeHdcpVersions(access, HDCP_VERSIONS),
+      persistentLicenseSupport: persistentLicense,
+      distinctiveIdentifier,
+      supportedCodecs: await probeEncryptedCodecs(keySystem, videoRobustness[0]),
+      supportedAudioCodecs: [],
+      encryptedDecodingQueried: 'mediaCapabilities' in navigator,
+      hdrCapabilities: supportedHdr,
+    });
+  }
+
+  return results;
+}
